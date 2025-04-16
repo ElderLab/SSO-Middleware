@@ -32,12 +32,19 @@ func New(config Config) fiber.Handler {
 			return c.Next()
 		}
 		// get the token from bearer token
-		token := c.Get("Authorization")
-		// if the token is empty, return unauthorized
+		cookieToken := c.Cookies("ELDERLAB-JWT")
+		bearerToken := c.Get("Authorization")
+		if bearerToken != "" {
+			bearerToken = bearerToken[len("Bearer "):]
+		}
+		token := bearerToken
 		if token == "" {
+			token = cookieToken
+		}
+		if token == "" {
+			// if the token is empty, return unauthorized
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 		}
-		token = token[7:]
 		// query the SSO service
 		connected, claims := utils.QuerySSO(token)
 		// if the SSO service is not connected, return unauthorized
